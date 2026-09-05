@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>北交威 · 教师情报站</title>
+<style>
+:root {
+  --primary: #1e3a8a; --accent: #f59e0b; --bg: #f5f6fa; --card: #fff;
+  --text: #222; --sub: #888; --border: #e8e8ef; --good: #10b981; --warn: #ef4444;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); }
+header { background: linear-gradient(135deg,#1e3a8a,#3b5bdb); color:#fff; padding:16px 20px 14px; position:sticky; top:0; z-index:10; }
+header h1 { font-size:20px; font-weight:700; }
+header p { font-size:12px; opacity:.8; margin-top:3px; }
+.searchbar { margin:12px 20px 0; position:relative; }
+.searchbar input { width:100%; padding:10px 14px 10px 38px; border:none; border-radius:20px; background:#ffffff22; color:#fff; font-size:15px; outline:none; }
+.searchbar input::placeholder { color:#ffffffaa; }
+.searchbar .icon { position:absolute; left:14px; top:9px; font-size:16px; opacity:.8; }
+/* 分类 tab */
+.tabs { display:flex; overflow-x:auto; gap:8px; padding:12px 16px; background:var(--bg); position:sticky; top:96px; z-index:9; }
+.tabs::-webkit-scrollbar { display:none; }
+.tab { flex-shrink:0; padding:6px 14px; border-radius:16px; background:#fff; color:var(--sub); font-size:13px; border:1px solid var(--border); cursor:pointer; }
+.tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+/* 老师列表 */
+.list { padding:4px 16px 20px; }
+.card { background:var(--card); border-radius:12px; padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 3px #0000000d; }
+.card .top { display:flex; justify-content:space-between; align-items:center; }
+.card .name { font-size:16px; font-weight:700; }
+.card .badge { font-size:11px; padding:2px 8px; border-radius:10px; }
+.badge.bjtu { background:#e8f0fe; color:#1e3a8a; }
+.badge.lu { background:#fef3e2; color:#b45309; }
+.badge.rit { background:#fde8e8; color:#c53030; }
+.score-row { display:flex; align-items:center; gap:6px; margin-top:8px; font-size:12px; color:var(--sub); }
+.score-row .big { font-size:20px; font-weight:800; color:var(--primary); }
+.stars { color:var(--accent); font-size:13px; letter-spacing:1px; }
+/* 打分面板 */
+.vote-panel { background:var(--card); border-radius:12px; padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 3px #0000000d; }
+.dim { display:flex; align-items:center; justify-content:space-between; padding:7px 0; border-bottom:1px dashed var(--border); }
+.dim:last-child { border-bottom:none; }
+.dim label { font-size:14px; }
+.dim .stars-input { font-size:26px; color:#ddd; cursor:pointer; user-select:none; letter-spacing:3px; }
+.dim .stars-input .on { color:var(--accent); }
+.submit-btn { width:100%; margin-top:10px; padding:11px; border:none; border-radius:10px; background:var(--primary); color:#fff; font-size:16px; font-weight:600; cursor:pointer; }
+.submit-btn:disabled { background:#bbb; cursor:not-allowed; }
+.voted-tip { text-align:center; color:var(--good); font-size:14px; padding:10px; }
+.dim-note { font-size:12px; color:var(--sub); margin-top:8px; text-align:center; }
+/* 汇总 */
+.summary { font-size:12px; color:var(--sub); text-align:center; padding:8px 0 2px; }
+.footer { text-align:center; color:#aaa; font-size:11px; padding:16px 0 30px; }
+.muted { color:var(--sub); font-size:12px; }
+/* 免责声明弹窗 */
+.disc-mask { position:fixed; inset:0; background:#00000099; z-index:100; display:flex; align-items:center; justify-content:center; padding:24px; }
+.disc-box { background:#fff; border-radius:14px; padding:22px 20px; max-width:340px; width:100%; text-align:center; box-shadow:0 8px 30px #00000040; }
+.disc-box h3 { font-size:17px; margin-bottom:12px; color:var(--primary); }
+.disc-box p { font-size:13px; color:#555; line-height:1.7; text-align:left; }
+.disc-box .count { font-size:12px; color:#999; margin-top:10px; }
+.disc-box button { margin-top:12px; width:100%; padding:10px; border:none; border-radius:10px; background:var(--primary); color:#fff; font-size:15px; font-weight:600; cursor:pointer; }
+.disc-box button:disabled { background:#bbb; }
+</style>
+</head>
+<body>
+<!-- 免责声明弹窗 -->
+<div class="disc-mask" id="discMask">
+  <div class="disc-box">
+    <h3>使用前请阅读</h3>
+    <p>本项目仅用于学习交流，非学校官方平台。教师名单与分类来源于北交大威海校区官网公开师资名录并经人工整理，可能存在遗漏、重复或分类偏差，仅供参考。评分内容为在校生个人观点，不构成任何选课依据；严禁人身攻击与恶意诽谤，违规内容将予删除；如涉侵权请联系删除。</p>
+    <p style="margin-top:8px">进入页面即视为同意以上声明。</p>
+    <div class="count" id="discCount">3 秒后自动关闭</div>
+    <button id="discBtn" disabled>知道了</button>
+  </div>
+</div>
+<header>
+  <h1>北交威 · 教师情报站</h1>
+  <p>学长学姐的亲身评价 · 匿名投票 · 一人一师一次</p>
+  <div class="searchbar"><span class="icon">Q</span><input id="search" placeholder="搜索老师姓名..."></div>
+</header>
+<div class="tabs" id="tabs"></div>
+<div class="summary" id="summary"></div>
+<div class="list" id="list"></div>
+<div class="footer">
+  数据来源：北交大威海校区官网公开师资名录（人工整理，可能存在遗漏/重复/分类偏差）<br>
+  免责声明：本项目仅用于学习交流，非学校官方平台，评分内容为在校生个人观点，仅供参考，不构成选课依据；严禁人身攻击与恶意诽谤；如涉侵权请联系删除。
+</div>
+<script src="teachers.js"></script>
+<script>
+// ============ 数据 ============
+// teachers.json 暴露全局 DATA = { groups: [{name, teachers:[{name, school}]}] }
+const DATA = window.DATA || { groups: [] };
+// Supabase 配置
+const SUPABASE_URL = 'https://jwelhwtqcwosvfwlowpl.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_4EMcfrYwSAe9RqHj5nOw2Q_ZVzQB4xJ';
+const DIMS = [
+  { key: 'kind', label: '给分大方程度', weight: 25 },
+  { key: 'teach', label: '教学能力程度', weight: 30 },
+  { key: 'fun', label: '幽默风趣程度', weight: 15 },
+  { key: 'harsh', label: '苛刻程度', weight: 10, reverse: true, min: 0 }, // min:0 = 可打 0 星（完全不苛刻）
+  { key: 'gain', label: '课程收获程度', weight: 20 }
+];
+
+
+let currentCat = DATA.groups[0] ? DATA.groups[0].name : '';
+let searchText = '';
+// 匿名用户 ID（防重复/可修改的标识，本地生成一次）
+let userId = localStorage.getItem('tv_uid');
+if (!userId) { userId = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); localStorage.setItem('tv_uid', userId); }
+// 本地评分记录：votedLocal[teacher] = {kind:4, teach:5, ...}（可修改=覆盖）
+let votedLocal = JSON.parse(localStorage.getItem('tv_voted') || '{}');
+
+// ============ 渲染分类 ============
+function renderTabs() {
+  const tabs = document.getElementById('tabs');
+  tabs.innerHTML = '';
+  DATA.groups.forEach(g => {
+    const d = document.createElement('div');
+    d.className = 'tab' + (g.name === currentCat ? ' active' : '');
+    d.textContent = g.name + '(' + g.teachers.length + ')';
+    d.onclick = () => { currentCat = g.name; renderTabs(); renderList(); };
+    tabs.appendChild(d);
+  });
+  const allCount = DATA.groups.length ? DATA.groups[0].teachers.length : 0;
+  document.getElementById('summary').textContent = '共 ' + allCount + ' 位老师 · 你的评价帮助后来人选课';
+}
+
+// ============ 渲染老师列表 ============
+function renderList() {
+  const list = document.getElementById('list');
+  const group = DATA.groups.find(g => g.name === currentCat);
+  if (!group) { list.innerHTML = ''; return; }
+  let teachers = group.teachers;
+  if (searchText) {
+    teachers = teachers.filter(t => t.name.toLowerCase().includes(searchText.toLowerCase()));
+  }
+  if (!teachers.length) { list.innerHTML = '<div class="muted" style="text-align:center;padding:30px">没有找到匹配的老师</div>'; return; }
+  list.innerHTML = teachers.map(t => {
+    const voted = votedLocal[t.name];
+    const badge = t.school === 'LU' ? 'lu' : t.school === 'RIT' ? 'rit' : 'bjtu';
+    const badgeTxt = t.school === 'LU' ? '兰卡' : t.school === 'RIT' ? 'RIT' : '北交';
+    const st = stats[t.name];
+    const voteBtn = voted
+      ? `<span style="color:#10b981;font-size:13px">[ 已评 ]</span><button class="submit-btn" type="button" style="margin:0;padding:5px 12px;font-size:13px;width:auto" data-vote="${esc(t.name)}">修改</button>`
+      : `<button class="submit-btn" type="button" style="margin-top:0;padding:8px;font-size:14px" data-vote="${esc(t.name)}">去评价</button>`;
+    const statHtml = st && st.n > 0
+      ? `<div style="margin-top:8px;font-size:12px;color:#555">
+          <span style="font-size:17px;font-weight:800;color:#1e3a8a">${st.composite}</span>
+          <span style="color:#888"> 综合分</span>
+          <span class="stars" style="margin-left:8px">${starStr(st.composite)}</span>
+          <div style="margin-top:4px;color:#999">
+            给分 ${st.kind} · 教学 ${st.teach} · 幽默 ${st.fun} · 苛刻 ${st.harsh} · 收获 ${st.gain}
+            <span style="margin-left:6px">(${st.n} 人评)</span>
+          </div>
+        </div>`
+      : `<div style="margin-top:6px;font-size:12px;color:#aaa">暂无评分 · 来当第一个评价的人</div>`;
+    return `<div class="card">
+      <div class="top">
+        <span class="name">${esc(t.name)}</span>
+        <span class="badge ${badge}">${badgeTxt}</span>
+      </div>
+      ${statHtml}
+      <div class="score-row" style="margin-top:8px">${voteBtn}</div>
+    </div>`;
+  }).join('');
+}
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+// ============ 打分面板 ============
+let votingTeacher = '';
+let votes = {};
+function openVote(name) {
+  votingTeacher = name;
+  // 预填旧评分（修改场景）
+  const old = votedLocal[name] || {};
+  votes = {};
+  const list = document.getElementById('list');
+  list.innerHTML = `<div class="vote-panel">
+    <div style="font-size:16px;font-weight:700;margin-bottom:6px">${esc(name)}</div>
+    <div style="font-size:12px;color:#888;margin-bottom:8px">匿名评价 · 可随时修改（修改会覆盖原评分，不重复计数）</div>
+    ${DIMS.map(d => `<div class="dim">
+      <label>${d.label}</label>
+      <div class="stars-input" data-dim="${d.key}">${d.min === 0 ? `<span class="zero-btn" data-zero="${d.key}" style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%;border:1.5px solid ${old[d.key] === 0 ? '#1e3a8a' : '#ccc'};color:${old[d.key] === 0 ? '#fff' : '#999'};background:${old[d.key] === 0 ? '#1e3a8a' : 'transparent'};font-size:12px;cursor:pointer;margin-right:6px;vertical-align:middle">0</span>` : ''}${Array.from({length:5}, (_,i) => `<span class="star-item" style="color:${old[d.key] && i < old[d.key] ? '#f59e0b' : '#ddd'};cursor:pointer">${old[d.key] && i < old[d.key] ? '★' : '☆'}</span>`).join('')}</div>
+    </div>`).join('')}
+    <button class="submit-btn" id="submitVote" type="button">${old && (old.kind || old.kind === 0) ? '保存修改' : '提交评价'}</button>
+    <div class="dim-note" id="voteHint"></div>
+    <div class="dim-note">苛刻程度：点"0"=完全不苛刻，星星越多越苛刻（会拉低综合分）</div>
+  </div>`;
+  // 预填 votes（修改时保留旧值，未改的维度沿用）
+  if (old.kind !== undefined) { DIMS.forEach(d => { if (old[d.key] !== undefined) votes[d.key] = old[d.key]; }); }
+}
+
+// 苛刻=0（不苛刻）：清星星，选中 0
+function setZero(dim) {
+  votes[dim] = 0;
+  const panel = document.getElementById('list');
+  const starInput = panel.querySelector('.stars-input[data-dim="' + dim + '"]');
+  if (starInput) {
+    // 清星
+    starInput.querySelectorAll('.star-item').forEach(s => { s.textContent = '☆'; s.style.color = '#ddd'; });
+    // 0 按钮选中
+    const zb = starInput.querySelector('.zero-btn');
+    if (zb) { zb.style.borderColor = '#1e3a8a'; zb.style.color = '#fff'; zb.style.background = '#1e3a8a'; }
+  }
+  updateHint();
+}
+
+function updateHint() {
+  const left = DIMS.length - Object.keys(votes).length;
+  const hint = document.getElementById('voteHint');
+  if (hint) hint.textContent = left > 0 ? '已点 ' + (DIMS.length - left) + '/5 项，点满 5 项才能提交' : '';
+}
+
+// 点星打分：点击星星 span 内位置（每个星单独元素，点击哪个就是几星）
+function setStars(dim, e) {
+  const el = e.currentTarget;
+  const starEls = el.querySelectorAll('.star-item');
+  // 找到点击的是第几个星
+  let idx = -1;
+  for (let i = 0; i < starEls.length; i++) {
+    if (starEls[i] === e.target || starEls[i].contains(e.target)) { idx = i; break; }
+  }
+  const star = idx >= 0 ? idx + 1 : Math.min(5, Math.max(1, Math.floor((e.clientX - el.getBoundingClientRect().left) / (el.getBoundingClientRect().width / 5)) + 1));
+  votes[dim] = star;
+  // 渲染每个星
+  el.innerHTML = '';
+  // 若该维度有 0 按钮，先补回 0 按钮（未选中态）
+  const dimCfg = DIMS.find(d => d.key === dim);
+  if (dimCfg && dimCfg.min === 0) {
+    const z = document.createElement('span');
+    z.className = 'zero-btn';
+    z.setAttribute('data-zero', dim);
+    z.textContent = '0';
+    z.style.cssText = 'display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%;border:1.5px solid #ccc;color:#999;font-size:12px;cursor:pointer;margin-right:6px;vertical-align:middle';
+    el.appendChild(z);
+  }
+  for (let i = 0; i < 5; i++) {
+    const s = document.createElement('span');
+    s.className = 'star-item';
+    s.textContent = i < star ? '★' : '☆';
+    s.style.color = i < star ? '#f59e0b' : '#ddd';
+    s.style.fontSize = 'inherit';
+    s.style.cursor = 'pointer';
+    el.appendChild(s);
+  }
+  updateHint();
+}
+
+async function submitVote() {
+  const left = DIMS.length - Object.keys(votes).length;
+  if (left > 0) { alert('还有 ' + left + ' 项没评，请点满 5 个维度的星星'); return; }
+  // 本地覆盖记录（可修改）
+  votedLocal[votingTeacher] = { ...votes };
+  localStorage.setItem('tv_voted', JSON.stringify(votedLocal));
+  if (SUPABASE_URL) {
+    try {
+      // UPSERT：同 user_id + teacher 已存在则覆盖（修改），不存在则插入
+      await fetch(SUPABASE_URL + '/rest/v1/votes?on_conflict=user_id,teacher', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal', 'x-user-id': userId },
+        body: JSON.stringify({ user_id: userId, teacher: votingTeacher, ...votes, updated_at: new Date().toISOString() })
+      });
+    } catch (err) { console.log('sync fail', err); }
+  }
+  // 提交后刷新统计（让新评分立刻显示在卡片上）
+  await loadStats();
+}
+
+// ============ 统计数据 ============
+let stats = {};  // stats[teacher] = {n, kind, teach, fun, harsh, gain, composite}
+async function loadStats() {
+  if (!SUPABASE_URL) return;
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/votes?select=teacher,kind,teach,fun,harsh,gain', {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    });
+    const rows = await res.json();
+    const agg = {};
+    rows.forEach(r => {
+      if (!agg[r.teacher]) agg[r.teacher] = { n: 0, kind: 0, teach: 0, fun: 0, harsh: 0, gain: 0 };
+      const a = agg[r.teacher];
+      a.n++; a.kind += r.kind; a.teach += r.teach; a.fun += r.fun; a.harsh += r.harsh; a.gain += r.gain;
+    });
+    stats = {};
+    Object.entries(agg).forEach(([t, a]) => {
+      const avg = k => +(a[k] / a.n).toFixed(1);
+      const kind = avg('kind'), teach = avg('teach'), fun = avg('fun'), harsh = avg('harsh'), gain = avg('gain');
+      // 综合分：苛刻反向 (5-harsh)，其余正向，按权重
+      const composite = +((kind * 0.25 + teach * 0.30 + fun * 0.15 + (5 - harsh) * 0.10 + gain * 0.20)).toFixed(1);
+      stats[t] = { n: a.n, kind, teach, fun, harsh, gain, composite };
+    });
+    renderList();
+  } catch (err) { console.log('load stats fail', err); }
+}
+
+function starStr(v) { return '★'.repeat(Math.round(v)) + '☆'.repeat(5 - Math.round(v)); }
+
+// ============ 免责声明弹窗（3 秒自动关闭） ============
+(function() {
+  const mask = document.getElementById('discMask');
+  const btn = document.getElementById('discBtn');
+  const count = document.getElementById('discCount');
+  let sec = 3;
+  const close = () => { if (mask) mask.style.display = 'none'; };
+  const timer = setInterval(() => {
+    sec--;
+    if (count) count.textContent = sec + ' 秒后自动关闭';
+    if (sec <= 0) { clearInterval(timer); close(); }
+  }, 1000);
+  if (btn) { setTimeout(() => { btn.disabled = false; }, 3000); btn.onclick = close; }
+})();
+
+// ============ 事件委托（解决移动端内联 onclick 失效问题） ============
+document.addEventListener('click', function(e) {
+  // 提交按钮
+  if (e.target && e.target.id === 'submitVote') { submitVote(); return; }
+  // 0 按钮（苛刻=不苛刻）
+  const zeroBtn = e.target.closest ? e.target.closest('.zero-btn') : null;
+  if (zeroBtn) { setZero(zeroBtn.getAttribute('data-zero')); return; }
+  // 星星点击（点星时若该维度是苛刻且之前选了 0，清除 0 状态）
+  const starInput = e.target.closest ? e.target.closest('.stars-input') : null;
+  if (starInput) { setStars(starInput.getAttribute('data-dim'), e); return; }
+  // 修改/去评价按钮
+  const voteBtn = e.target.closest ? e.target.closest('button[data-vote]') : null;
+  if (voteBtn) { openVote(voteBtn.getAttribute('data-vote')); return; }
+});
+
+// ============ 初始化 ============
+document.getElementById('search').addEventListener('input', e => { searchText = e.target.value.trim(); renderList(); });
+renderTabs();
+renderList();
+loadStats();
+</script>
+</body>
+</html>
